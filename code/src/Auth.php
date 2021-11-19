@@ -1,16 +1,19 @@
 <?php
 
 namespace App;
+use PDO;
 
 class Auth{
 
-    private ?Database $database = null;
+    private PDO $database;
 
-    public function __constructor(Database $database){
+    public function __construct(PDO $database)
+    {
         $this->database = $database;
     }
 
     public function regstarion(array $data): bool {
+
         if(empty($data['username'])){
             throw new AuthEx ('The username shold not be emty');
         }
@@ -24,7 +27,7 @@ class Auth{
             throw new AuthEx ('Password and confirm paswword shold match');
         }
 
-        $statment = $this->database->getConnection()->prepare('INSERT INTO user (email, password, username) VALUES (:email, :password, :username)');
+        $statment = $this->database->prepare('INSERT INTO user (email, password, username) VALUES (:email, :password, :username)');
         $statment->execute([
             'email' => $data['email'],
             'password' => $data['password'],

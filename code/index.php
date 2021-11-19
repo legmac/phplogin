@@ -13,18 +13,25 @@ require __DIR__ . '/vendor/autoload.php';
 $loader = new FilesystemLoader('templates');
 $view = new Environment($loader);
 
+
 $config = include 'config/database.php';
 $dsn = $config['dsn'];
 $username = $config['username'];
 $password = $config['password'];
 
-$database = new Database($dsn, $username, $password);
-$auth = new Auth($database);
-//var_dump($auth);
+try {
+    $connection = new PDO($dsn, $username, $password);
+    $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch (PDOException $exception) {
+    echo 'Database error: ' . $exception->getMessage();
+    die();
+}
+$auth = new Auth($connection);
 
 // Create app
 $app = AppFactory::create();
-$app->addBodyParsingMiddleware(); // $_POST
+//$app->addBodyParsingMiddleware(); // $_POST
 
 
 $app->get('/', function (Request $request, Response $response) use ($view) {
