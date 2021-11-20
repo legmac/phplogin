@@ -2,8 +2,10 @@
 use App\Database;
 use App\Auth;
 use App\AuthEx;
+use App\Session;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Server\RequestHandlerInterface as Handler;
 use Slim\Factory\AppFactory;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -31,8 +33,17 @@ $auth = new Auth($connection);
 
 // Create app
 $app = AppFactory::create();
-//$app->addBodyParsingMiddleware(); // $_POST
+$app->addBodyParsingMiddleware(); // $_POST
 
+//Sesion
+$session = new Session();
+$sessionMid = function(Request $request, Handler $handler) use ($session){
+    $session->start();
+    $response = $handler->handle($request);
+    $session->save();
+    return $response;
+};
+$app->add($sessionMid);
 
 $app->get('/', function (Request $request, Response $response) use ($view) {
     $body = $view->render('index.html');
@@ -48,17 +59,20 @@ $app->post('/login-post', function (Request $request, Response $response) {
     $response->getBody()->write('Login Page');
     return $response;
 });
-$app->get('/register', function (Request $request, Response $response) use ($view) {
-    $body = $view->render('register.html');
+$app->get('/register', function (Request $request, Response $response) use ($view, $session) {
+    $body = $view->render('register.html',[
+        'msg'=> $session->flush('msg')
+    ]);
     $response->getBody()->write($body);
     return $response;
 });
-$app->post('/register-post', function (Request $request, Response $response) use ($auth) {
+$app->post('/register-post', function (Request $request, Response $response) use ($auth, $session) {
     $params = (array) $request->getParsedBody();
     //var_dump($params);
     try{
     $auth->regstarion($params);
     }catch (AuthEx $e) {
+        $session->setData('msg', $e->getMessage());
         return $response->withHeader('Location', '/register')
         ->withStatus(302);
     }
