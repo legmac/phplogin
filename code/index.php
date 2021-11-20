@@ -29,7 +29,6 @@ try {
     echo 'Database error: ' . $exception->getMessage();
     die();
 }
-$auth = new Auth($connection);
 
 // Create app
 $app = AppFactory::create();
@@ -45,23 +44,41 @@ $sessionMid = function(Request $request, Handler $handler) use ($session){
 };
 $app->add($sessionMid);
 
-$app->get('/', function (Request $request, Response $response) use ($view) {
-    $body = $view->render('index.html');
+$auth = new Auth($connection, $session);
+
+$app->get('/', function (Request $request, Response $response) use ($view, $session) {
+    $body = $view->render('index.html',[
+        'user'=> $session->getData('user')
+        ]);
     $response->getBody()->write($body);
     return $response;
 });
-$app->get('/login', function (Request $request, Response $response) use ($view) {
-    $body = $view->render('login.html');
+$app->get('/login', function (Request $request, Response $response) use ($view, $session) {
+    $body = $view->render('login.html',[
+    'msg'=> $session->flush('msg'),
+    'form'=> $session->flush('form')
+    ]);
     $response->getBody()->write($body);
     return $response;
 });
-$app->post('/login-post', function (Request $request, Response $response) {
-    $response->getBody()->write('Login Page');
-    return $response;
+$app->post('/login-post', function (Request $request, Response $response) use ($auth, $session){
+    //$response->getBody()->write('Login Page');
+    $params = (array) $request->getParsedBody();
+    try{
+    $auth->login($params['email'],$params['password']);
+    }catch(AuthEx $e){
+        $session->setData('msg', $e->getMessage());
+        $session->setData('form', $params);
+        return $response->withHeader('Location', '/login')
+        ->withStatus(302);
+    }
+    return $response->withHeader('Location', '/')
+    ->withStatus(302);
 });
 $app->get('/register', function (Request $request, Response $response) use ($view, $session) {
     $body = $view->render('register.html',[
-        'msg'=> $session->flush('msg')
+        'msg'=> $session->flush('msg'),
+        'form'=> $session->flush('form')
     ]);
     $response->getBody()->write($body);
     return $response;
@@ -73,14 +90,19 @@ $app->post('/register-post', function (Request $request, Response $response) use
     $auth->regstarion($params);
     }catch (AuthEx $e) {
         $session->setData('msg', $e->getMessage());
+        $session->setData('form', $params);
         return $response->withHeader('Location', '/register')
         ->withStatus(302);
     }
     return $response->withHeader('Location', '/')
     ->withStatus(302);
 });
-$app->get('/logout', function (Request $request, Response $response) {
-    return $response;
+$app->get('/logout', function (Request $request, Response $response) use ($session){
+    $session->setData('user', null);
+    return $response->withHeader('Location', '/')
+    ->withStatus(302);
 });
+
+
 
 $app->run();

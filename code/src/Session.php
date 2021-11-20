@@ -7,7 +7,7 @@ class Session{
     public function start():void{
         session_start();
     }
-    public function satData(string $key, $value):void{
+    public function setData(string $key, $value):void{
         $_SESSION[$key] = $value;
     }
     public function getData(string $key){
