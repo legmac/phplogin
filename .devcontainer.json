@@ -3,6 +3,6 @@
     "dockerComposeFile": [
     "docker-compose.yml"
     ],
-    "workspaceFolder": "/var/www/html",
+    "workspaceFolder": "/tmp/phplogin/code",
     "service": "app",
 }

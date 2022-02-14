@@ -12,6 +12,8 @@ use Twig\Loader\FilesystemLoader;
 
 require __DIR__ . '/vendor/autoload.php';
 
+\Sentry\init(['dsn' => 'https://9d03f29909e14d10aeceae31e80004e2@o1141372.ingest.sentry.io/6204391' ]);
+
 $loader = new FilesystemLoader('templates');
 $view = new Environment($loader);
 
